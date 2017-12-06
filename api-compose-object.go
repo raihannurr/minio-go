@@ -412,10 +412,9 @@ func (c Client) ComposeObject(dst DestinationInfo, srcs []SourceInfo) error {
 	srcSizes := make([]int64, len(srcs))
 	var totalSize, size, totalParts int64
 	var srcUserMeta map[string]string
-	var etag string
 	var err error
 	for i, src := range srcs {
-		size, etag, srcUserMeta, err = src.getProps(c)
+		size, _, srcUserMeta, err = src.getProps(c)
 		if err != nil {
 			return err
 		}
@@ -425,15 +424,6 @@ func (c Client) ComposeObject(dst DestinationInfo, srcs []SourceInfo) error {
 		if len(srcs) > 1 && src.Headers.Get("x-amz-meta-x-amz-key") != "" {
 			return ErrInvalidArgument(
 				fmt.Sprintf("Client side encryption is used in source object %s/%s", src.bucket, src.object))
-		}
-
-		// Since we did a HEAD to get size, we use the ETag
-		// value to make sure the object has not changed by
-		// the time we perform the copy. This is done, only if
-		// the user has not set their own ETag match
-		// condition.
-		if src.Headers.Get("x-amz-copy-source-if-match") == "" {
-			src.SetMatchETagCond(etag)
 		}
 
 		// Check if a segment is specified, and if so, is the
